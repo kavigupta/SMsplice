@@ -698,29 +698,22 @@ def cass_accuracy_metrics_set_cutoff(scored_sequences_5, scored_sequences_3, gen
 
 def viterbi(sequences, transitions, pIL, pELS, pELF, pELM, pELL, exonicSREs5s, exonicSREs3s, intronicSREs5s, intronicSREs3s, k, sreEffect5_exon, sreEffect5_intron, sreEffect3_exon, sreEffect3_intron, meDir = ''): 
     # Get the best parses of all the input sequences
-    
+
     batch_size = len(sequences)
-    tbindex = np.zeros(batch_size, dtype=np.dtype("i"))
     lengths = np.zeros(batch_size, dtype=np.dtype("i"))
-    loglik = np.log(np.zeros(batch_size, dtype=np.dtype("d")))
-    
+
     # Collect the lengths of each sequence in the batch
     for g in range(batch_size): 
         lengths[g] = len(sequences[g])
     L = np.max(lengths)
-    
+
     emissions3 = np.log(np.zeros((batch_size, L), dtype=np.dtype("d")))
     emissions5 = np.log(np.zeros((batch_size, L), dtype=np.dtype("d"))) 
-    Three = np.log(np.zeros((batch_size, L), dtype=np.dtype("d")))    
-    Five = np.log(np.zeros((batch_size, L), dtype=np.dtype("d")))
-    traceback5 = np.zeros((batch_size, L), dtype=np.dtype("i")) + L
-    traceback3 = np.zeros((batch_size, L), dtype=np.dtype("i")) + L
-    bestPath = np.zeros((batch_size, L), dtype=np.dtype("i"))
-    
+
     # Rewind state vars
     exon = 2
     intron = 1
-     
+
     # Convert inputs to log space
     transitions = np.log(transitions)
     pIL = np.log(pIL)
@@ -757,8 +750,23 @@ def viterbi(sequences, transitions, pIL, pELS, pELF, pELM, pELL, exonicSREs5s, e
     
     # Convert the transition vector into named probabilities
     pME = transitions[0]
-    p1E = np.log(1 - np.exp(pME))
     pEE = transitions[1]
+    return viterbi_direct(lengths, pIL, pELS, pELF, pELM, pELL, pME, pEE, emissions5, emissions3)
+
+def viterbi_direct(lengths, pIL, pELS, pELF, pELM, pELL, pME, pEE, emissions5, emissions3):
+    tbindex = np.zeros(batch_size, dtype=np.dtype("i"))
+    loglik = np.log(np.zeros(batch_size, dtype=np.dtype("d")))
+
+    batch_size = len(lengths)
+    L = np.max(lengths)
+    Three = np.log(np.zeros((batch_size, L), dtype=np.dtype("d")))    
+    Five = np.log(np.zeros((batch_size, L), dtype=np.dtype("d")))
+    traceback5 = np.zeros((batch_size, L), dtype=np.dtype("i")) + L
+    traceback3 = np.zeros((batch_size, L), dtype=np.dtype("i")) + L
+    bestPath = np.zeros((batch_size, L), dtype=np.dtype("i"))
+
+    # Convert the transition vector into named probabilities
+    p1E = np.log(1 - np.exp(pME))
     pEO = np.log(1 - np.exp(pEE))
     
     # Initialize the first and single exon probabilities
